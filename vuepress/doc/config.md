@@ -145,7 +145,7 @@ config.onConfigChange(()=>{});
 如果要对 config 的数据进行类型声明，可以使用如下代码进行扩展：
 
 ```ts
-declare module 'sener' {
+declare module 'sener-extend' {
     interface IConfigData {
         level: number,
         age: number,
