@@ -3,7 +3,7 @@
  * @Date: 2022-10-30 02:42:04
  * @Description: Coding something
  * @LastEditors: Please set LastEditors
- * @LastEditTime: 2023-05-13 17:04:03
+ * @LastEditTime: 2024-05-28 22:46:17
 -->
 
 ## 1. npm安装
@@ -51,8 +51,8 @@ import { RPC } from 'sener-rpc';
 new Sener({
   port: 9000,
   middlewares: [
-    new Router({}), // 建议router放在middleware第一个
-    new Cookie(), // cookie 需要在 session 之前
+    new Router({}),
+    new Cookie(),
     new Session(),
     new Json(),
     new Static(),

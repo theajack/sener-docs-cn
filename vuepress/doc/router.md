@@ -34,8 +34,6 @@ new Sener({
 });
 ```
 
-需要注意的是 router 中间件一般建议放在第一个位置
-
 也可以使用json声明，以方便按模块定义路由规则，如果使用ts可以搭配接口使用
 
 ```ts
@@ -87,7 +85,7 @@ const router = new Router({
 });
 ```
 
-3. Url就路由的path，该参数为必选
+3. Url就是路由的path，该参数为必选
 
 ### value
 
@@ -102,7 +100,8 @@ export type IRouterHandler = (
 // 当为对象时
 export interface IRouterHandlerData {
     handler: IRouterHandler;
-    meta: IJson;
+    meta?: IJson;
+    alias?: string[]; // 路由别名，用于将不同的url指向同一个路由
 }
 ```
 
@@ -115,6 +114,7 @@ const router = new Router({
     '/aa': (ctx) => {},
     '/bb': {
         meta: {},
+        alias: ['/bb1', '/bb2'], // bb1 和 bb2 也会指向当前路由
         handler: (ctx) => {},
     },
 });
@@ -130,33 +130,93 @@ const router = new Router({
 });
 ```
 
+## 模糊匹配
+
+Router 中间件支持模糊匹配，即可以匹配一类路由，然后在 handler 中根据参数进行分发
+
+
+```js
+const router = new Router({
+    '/api/:userId': ({params}) => {
+        return {data: params.userId};
+    },
+    // 正则条件
+    '/api2/:userId(\d+)': ({params}) => {
+        // 后跟括号表示需要参数满足正则表达式，否则路由会报错
+        return {data: params.userId};
+    },
+    // 带#前缀表示数字
+    '/api3/:#userId': ({params}) => {},
+    // 带!前缀表示布尔类型
+    '/api4/:!isTrue': ({params}) => {},
+});
+```
+
+
+## 复用路由前缀
+
+Router 中间件支持复用路由前缀，即可以将一类路由的前缀提取出来
+
+使用 createRoute 方法来创建一组具有相同前缀的路由，子路由使用与完整路由一致，支持method前缀、私有路由、meta、模糊匹配等，使用方式如下
+
+```js
+import { createRoute } from 'sener';
+const router = new Router({
+    ...createRoute('/api/user', {
+        '/info': ()=>{
+            // ...
+        },
+        'post:/update': ()=>{
+            // ...
+        },
+        // ...
+    })
+});
+```
+
 ## router helper
 
-router 中间件会注入以下三个 helper
+router 中间件会注入以下 helper
 
 ```ts
 interface IRouterHelper {
-    meta: IJson;
-    route(
-        url: string, data?: Partial<ISenerContext>,
-    ): IPromiseMayBe<IHookReturn>;
+    meta: IJson; // 获取路由元信息
+    params: IJson; // 获取路由模糊匹配中的参数
     index: ()=>number;
+    route<T extends IHookReturn = IHookReturn>(
+        url: string, data?: Partial<ISenerContext>,
+    ): IPromiseMayBe<T>; // 调用其他路由，返回路由结果，一般用于复用路由逻辑
+    redirect: (url: string, query?: IJson, header?: IJson) => void, // 路由重定向 （302）
 }
 ```
 
 ### meta
 
-meta在前文中已经做过了介绍，主要是用来写入路由的元信息供自身或其他hook中使用
+meta在前文中已经做过了介绍，helper中的meta用来获取当前路由的元信息
 
 ```js
 const router = new Router({
-    '/test': ({meta, index, route}) => {},
+    '[db]/test': ({meta}) => {
+        return {data: meta};
+    },
+});
+```
+
+### params
+
+params在前文中已经做过了介绍，helper中的params是用来获取当前路由的参数
+
+```js
+const router = new Router({
+    '/test/:id': ({params}) => {
+        return {data: params};
+    },
 });
 ```
 
 ### route
 
-route方法用来重定向到其他路由 或 调用其他请求拿到返回结果，该方法可以访问私有路由
+route方法用来调用其他路由拿到返回结果，该方法可以访问私有路由
 
 ```js
 const router = new Router({
@@ -170,6 +230,19 @@ const router = new Router({
         const data = route('/route-test');
         // ... do something
         return {data};
+    },
+});
+```
+
+### redirect
+
+redirect方法用进行路由重定向
+
+```js
+const router = new Router({
+    '/test1': () => {return {data: 'test1'}},
+    '/test2': ({redirect}) => {
+        return redirect('/test1')
     },
 });
 ```

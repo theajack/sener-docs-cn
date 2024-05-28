@@ -47,14 +47,10 @@ type IConfigChange = (data: {
   key: string, value: any, prev: any
 }) => void;
 
-interface IInitialConfigData {
-    filename: string;
-    data: Record<string, any>;
-}
 interface IConfigOptions {
     dir?: string, // 配置文件的存储目录 默认为 'config', 即为 {Sener.Dir}/config
     format?: boolean, // 是否格式化配置文件，默认为true
-    initial?: IInitialConfigData[], // 初始配置数据
+    initial?: Record<string, Record<string, any>>, // 初始配置数据 默认值为 {_default: {}}
     onchange?: IConfigChange; // 配置数据改变的回调函数
 }
 ```
@@ -68,19 +64,15 @@ dir 可以配置相对路径，表示相对于 `Sener.Dir`，也可以配置一�
 ```js
 
 new Config({
-    initial: [{
-        filename: 'user', // 用户配置文件，存储为 user.json
-        data: {
-            showImage: true, // 配置是否展示头像
-            maxVisitors: 999, // 配置最大可见访客
-        }
-    }, {
-        filename: 'goods', // 商品配置文件，存储为 goods.json
-        data: {
-            maxPrice: 9999,
-            // ...
-        }
-    }]
+    // 用户配置文件，存储为 user.json
+    user: {
+        showImage: true, // 配置是否展示头像
+        maxVisitors: 999, // 配置最大可见访客
+    },
+    goods: { // 商品配置文件，存储为 goods.json
+        maxPrice: 9999,
+        // ...
+    }
 });
 ```
 
